@@ -11,6 +11,7 @@ import {
 } from "react";
 import type { DurationId, GoalId, LevelId, WeeklyPlan } from "@/data/types";
 import { generateWeeklyPlan } from "@/data/schedule";
+import { computeProgressStats, exerciseKey } from "@/lib/progress";
 
 export interface UserSelection {
   goal: GoalId;
@@ -53,10 +54,6 @@ interface AppStateContextValue {
 }
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
-
-function exerciseKey(dayIndex: number, exerciseId: string) {
-  return `${dayIndex}:${exerciseId}`;
-}
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<PersistedState>(DEFAULT_STATE);
@@ -136,49 +133,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     );
   }, [state.selection]);
 
-  const stats = useMemo(() => {
-    const trainingDays = plan ? plan.days.filter((d) => !d.isRest) : [];
-    const totalTrainingDays = trainingDays.length;
-    const completedSessions = trainingDays.filter((d) =>
-      state.completedSessionDays.includes(d.dayIndex)
-    ).length;
-    const totalExercises = trainingDays.reduce(
-      (sum, d) => sum + d.exercises.length,
-      0
-    );
-    const completedExercises = trainingDays.reduce(
-      (sum, d) =>
-        sum +
-        d.exercises.filter((ex) =>
-          state.completedExerciseKeys.includes(
-            exerciseKey(d.dayIndex, ex.exercise.id)
-          )
-        ).length,
-      0
-    );
-    const percentage =
-      totalExercises === 0
-        ? 0
-        : Math.round((completedExercises / totalExercises) * 100);
-
-    let streak = 0;
-    for (let i = trainingDays.length - 1; i >= 0; i--) {
-      if (state.completedSessionDays.includes(trainingDays[i].dayIndex)) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-
-    return {
-      totalTrainingDays,
-      completedSessions,
-      totalExercises,
-      completedExercises,
-      percentage,
-      streak,
-    };
-  }, [plan, state.completedSessionDays, state.completedExerciseKeys]);
+  const stats = useMemo(
+    () =>
+      computeProgressStats(
+        plan,
+        state.completedSessionDays,
+        state.completedExerciseKeys
+      ),
+    [plan, state.completedSessionDays, state.completedExerciseKeys]
+  );
 
   const value: AppStateContextValue = {
     hydrated,

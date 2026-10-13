@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Logo from "@/components/Logo";
 
 export default function SiteFooter() {
@@ -15,6 +16,9 @@ export default function SiteFooter() {
           </div>
           <div className="text-sm text-muted">
             <p>© 2026 REVO. Bản demo giao diện.</p>
+            <Link href="/admin" className="mt-2 inline-block text-xs text-muted/70 hover:text-accent">
+              Trang quản trị (Admin)
+            </Link>
           </div>
         </div>
       </div>
